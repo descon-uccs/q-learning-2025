@@ -8,6 +8,7 @@ Created on Mon May 19 10:53:30 2025
 from typing import Tuple, Optional
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class InertialGridworldEnv:
@@ -152,6 +153,47 @@ class QTableAgent:
                 if done:
                     break
 
+class QTableVisualizer:
+    @staticmethod
+    def render(env: InertialGridworldEnv, agent: QTableAgent):
+        fig, ax = plt.subplots()
+        width, height = env.width, env.height
+
+        action_dirs = {
+            'thrust_up': (0, 0.3),
+            'thrust_down': (0, -0.3),
+            'thrust_left': (-0.3, 0),
+            'thrust_right': (0.3, 0),
+            'coast': (0, 0)
+        }
+
+        for y in range(height):
+            for x in range(width):
+                base_idx = (y * width + x) * len(env.motions)
+                q_values = agent.q_table[base_idx:base_idx + len(env.motions)]
+                mean_qs = np.mean(q_values, axis=0)
+
+                for i, action in enumerate(env.actions):
+                    dx, dy = action_dirs[action]
+                    cx, cy = x + 0.5, height - y - 0.5
+                    color = plt.cm.viridis((mean_qs[i] + 1) / 11)
+
+                    if action == 'coast':
+                        circ = plt.Circle((cx, cy), 0.07, color=color)
+                        ax.add_patch(circ)
+                    else:
+                        ax.arrow(cx, cy, dx * 0.4, dy * 0.4, head_width=0.08, head_length=0.08, fc=color, ec=color)
+
+        ax.set_xlim(0, width)
+        ax.set_ylim(0, height)
+        ax.set_xticks(np.arange(width + 1))
+        ax.set_yticks(np.arange(height + 1))
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_aspect('equal')
+        ax.grid(True)
+        plt.title("Q-Table Action Preferences")
+        plt.show()
 
 
 if __name__ == "__main__":
