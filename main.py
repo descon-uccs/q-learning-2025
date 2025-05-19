@@ -18,7 +18,7 @@ class InertialGridworldEnv:
         self.goal_pos = goal
 
         self.motions = ['none', 'up', 'down', 'left', 'right']
-        self.actions = ['thrust_up', 'thrust_down', 'thrust_left', 'thrust_right']
+        self.actions = ['thrust_up', 'thrust_down', 'thrust_left', 'thrust_right', 'coast']
 
         self.motion_map = {
             'thrust_up': 'up',
@@ -40,13 +40,16 @@ class InertialGridworldEnv:
         x, y, motion = self.state
 
         # --- Update motion ---
-        thrust_dir = self.motion_map[action]
-        if motion == 'none':
-            new_motion = thrust_dir
-        elif self.opposite[motion] == thrust_dir:
-            new_motion = 'none'
-        else:
+        if action == 'coast':
             new_motion = motion
+        else:
+            thrust_dir = self.motion_map[action]
+            if motion == 'none':
+                new_motion = thrust_dir
+            elif self.opposite[motion] == thrust_dir:
+                new_motion = 'none'
+            else:
+                new_motion = motion
 
         # --- Apply motion ---
         dx, dy = self._motion_delta(new_motion)
@@ -59,7 +62,7 @@ class InertialGridworldEnv:
         done = (new_x, new_y) == self.goal_pos
 
         delay_penalty = -1 if not done else 0
-        thrust_penalty = -1 if motion != new_motion else 0
+        thrust_penalty = -1 if action != 'coast' else 0
         reward = 10 if done else delay_penalty + thrust_penalty
 
         return self.state, reward, done, {}
@@ -151,7 +154,6 @@ class QTableAgent:
 
 
 
-
 if __name__ == "__main__":
     # Create a 5x5 grid, start at top-left, goal at bottom-right
     env = InertialGridworldEnv(width=5, height=5, start=(0, 0), goal=(4, 4))
@@ -165,7 +167,7 @@ if __name__ == "__main__":
         'thrust_down',   # ignored, motion stays right
         'thrust_left',   # cancels motion → none
         'thrust_down',   # sets motion → down
-        'thrust_down',   # motion continues down
+        'coast',         # motion continues down
         'thrust_up',     # cancels motion → none
     ]
 
